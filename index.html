@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Запись продажи ДВС</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: var(--tg-theme-bg-color, #ffffff);
+      --text: var(--tg-theme-text-color, #111111);
+      --input-bg: var(--tg-theme-secondary-bg-color, #f2f3f5);
+      --accent: var(--tg-theme-button-color, #2481cc);
+      --accent-text: var(--tg-theme-button-text-color, #ffffff);
+      --border: #d7d8dc;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: var(--bg);
+      color: var(--text);
+      box-sizing: border-box;
+    }
+    .field {
+      margin-bottom: 12px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 15px;
+      box-sizing: border-box;
+      outline: none;
+    }
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+    .hidden {
+      display: none;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+    }
+    .row > div {
+      flex: 1;
+    }
+    .btn-submit {
+      width: 100%;
+      background: var(--accent);
+      color: var(--accent-text);
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <form id="saleForm">
+    <div class="field">
+      <label>Модель двигателя *</label>
+      <input type="text" id="model" placeholder="Например: 1ZZ-FE, 4A91, G4FC" required>
+    </div>
+
+    <div class="field">
+      <label>Номер двигателя *</label>
+      <input type="text" id="number" placeholder="Номер ДВС" required>
+    </div>
+
+    <div class="field">
+      <label>Стоимость (руб.) *</label>
+      <!-- text-поле, чтобы можно было вводить и 120000, и 120.000, и 120 000 -->
+      <input type="text" id="price" placeholder="Например: 120000 или 120.000" required>
+    </div>
+
+    <div class="field">
+      <label>Способ оплаты *</label>
+      <select id="paymentType" onchange="onPaymentChange()" required>
+        <option value="cash">Наличные</option>
+        <option value="transfer">Перевод</option>
+        <option value="split">Раздельная (нал + перевод)</option>
+        <option value="rs">Расчетный счет (+10%)</option>
+        <option value="credit">Рассрочка</option>
+      </select>
+    </div>
+
+    <!-- Банк для перевода -->
+    <div class="field hidden" id="bankBlock">
+      <label>Банк получения перевода *</label>
+      <select id="bankSelect">
+        <option value="Сбербанк">Сбербанк</option>
+        <option value="Озон Банк">Озон Банк</option>
+        <option value="Альфа-Банк">Альфа-Банк</option>
+      </select>
+    </div>
+
+    <!-- Блок раздельной оплаты -->
+    <div id="splitBlock" class="hidden">
+      <div class="row field">
+        <div>
+          <label>Сумма нал *</label>
+          <input type="text" id="splitCash" placeholder="Наличные (руб.)">
+        </div>
+        <div>
+          <label>Сумма перевод *</label>
+          <input type="text" id="splitTransfer" placeholder="Перевод (руб.)">
+        </div>
+      </div>
+      <div class="field">
+        <label>Банк для перевода *</label>
+        <select id="splitBankSelect">
+          <option value="Сбербанк">Сбербанк</option>
+          <option value="Озон Банк">Озон Банк</option>
+          <option value="Альфа-Банк">Альфа-Банк</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Источник клиента *</label>
+      <select id="source" required>
+        <option value="Постоянный клиент">Постоянный клиент</option>
+        <option value="Сарафанное радио">Сарафанное радио</option>
+        <option value="Авито">Авито</option>
+        <option value="Drom">Drom</option>
+        <option value="Сайт">Сайт</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Номер договора *</label>
+      <input type="text" id="contract" placeholder="№ Договора" required>
+    </div>
+
+    <div class="field">
+      <label>Способ забора / доставки *</label>
+      <select id="delivType" onchange="onDeliveryChange()" required>
+        <option value="pickup">Самовывоз с нашего склада</option>
+        <option value="service">Доставка до сервиса</option>
+        <option value="tk">Доставка до транспортной компании</option>
+        <option value="intercity">Доставка в другой город нашими силами</option>
+      </select>
+    </div>
+
+    <div class="field hidden" id="delivDetailsBlock">
+      <label id="delivLabel">Уточнение доставки *</label>
+      <input type="text" id="delivDetails" placeholder="Укажите детали">
+    </div>
+
+    <div class="field">
+      <label>Покупатель (ФИО и номер телефона)</label>
+      <input type="text" id="client" placeholder="Иван +79991234567 (необязательно)">
+    </div>
+
+    <button type="submit" class="btn-submit">Сохранить и отправить</button>
+  </form>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    // Функция парсинга и очистки введенной цены
+    function parseNumericPrice(str) {
+      if (!str) return 0;
+      // Убираем пробелы, точки тысяч, знаки валют и меняем запятую на точку
+      let cleaned = str.toString().replace(/\s+/g, '').replace(/\./g, '').replace(',', '.');
+      return parseFloat(cleaned) || 0;
+    }
+
+    function formatNumber(num) {
+      return num.toLocaleString('ru-RU');
+    }
+
+    function onPaymentChange() {
+      const val = document.getElementById('paymentType').value;
+      document.getElementById('bankBlock').classList.toggle('hidden', val !== 'transfer');
+      document.getElementById('splitBlock').classList.toggle('hidden', val !== 'split');
+    }
+
+    function onDeliveryChange() {
+      const val = document.getElementById('delivType').value;
+      const block = document.getElementById('delivDetailsBlock');
+      const label = document.getElementById('delivLabel');
+      const input = document.getElementById('delivDetails');
+
+      if (val === 'pickup') {
+        block.classList.add('hidden');
+        input.required = false;
+        input.value = '';
+      } else if (val === 'service') {
+        block.classList.remove('hidden');
+        input.required = true;
+        label.innerText = 'Адрес сервиса (в скобках) *';
+        input.placeholder = 'Адрес сервиса или название';
+      } else if (val === 'tk') {
+        block.classList.remove('hidden');
+        input.required = true;
+        label.innerText = 'Транспортная компания (в скобках) *';
+        input.placeholder = 'Например: ПЭК, Деловые Линии, СДЭК, КИТ';
+      } else if (val === 'intercity') {
+        block.classList.remove('hidden');
+        input.required = true;
+        label.innerText = 'Город доставки (в скобках) *';
+        input.placeholder = 'Например: Пермь, Тюмень, Челябинск';
+      }
+    }
+
+    document.getElementById('saleForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      let rawPrice = document.getElementById('price').value.trim();
+      let basePrice = parseNumericPrice(rawPrice);
+      let pType = document.getElementById('paymentType').value;
+      let payDesc = '';
+
+      if (pType === 'cash') {
+        payDesc = 'Наличные';
+      } else if (pType === 'transfer') {
+        payDesc = `Перевод (${document.getElementById('bankSelect').value})`;
+      } else if (pType === 'split') {
+        let c = parseNumericPrice(document.getElementById('splitCash').value);
+        let t = parseNumericPrice(document.getElementById('splitTransfer').value);
+        let b = document.getElementById('splitBankSelect').value;
+        payDesc = `Раздельная (Нал: ${formatNumber(c)} ₽ | Перевод: ${formatNumber(t)} ₽ на ${b})`;
+      } else if (pType === 'rs') {
+        let rsSum = Math.round(basePrice * 1.1);
+        payDesc = `Р/С (+10%): ${formatNumber(rsSum)} ₽`;
+        basePrice = rsSum;
+      } else if (pType === 'credit') {
+        payDesc = 'Рассрочка';
+      }
+
+      // Логика формирования способа доставки
+      let dType = document.getElementById('delivType').value;
+      let details = document.getElementById('delivDetails').value.trim();
+      let deliveryFormatted = 'Самовывоз с нашего склада';
+
+      if (dType === 'service') {
+        deliveryFormatted = `Доставка до сервиса (${details})`;
+      } else if (dType === 'tk') {
+        deliveryFormatted = `Доставка до транспортной компании (${details})`;
+      } else if (dType === 'intercity') {
+        deliveryFormatted = `Доставка в другой город нашими силами (${details})`;
+      }
+
+      const payload = {
+        model: document.getElementById('model').value.trim(),
+        number: document.getElementById('number').value.trim(),
+        price: formatNumber(basePrice) + ' ₽',
+        payment: payDesc,
+        source: document.getElementById('source').value,
+        contract: document.getElementById('contract').value.trim(),
+        delivery: deliveryFormatted,
+        client: document.getElementById('client').value.trim() || '—'
+      };
+
+      tg.sendData(JSON.stringify(payload));
+      tg.close();
+    });
+  </script>
+</body>
+</html>
