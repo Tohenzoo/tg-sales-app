@@ -166,7 +166,7 @@
       <input type="text" id="delivDetails" placeholder="Укажите детали">
     </div>
 
-    <!-- Двойной блок для ТК: Название ТК + Город -->
+    <!-- Двойной блок для ТК -->
     <div id="tkBlock" class="hidden">
       <div class="row field">
         <div>
@@ -175,7 +175,7 @@
           <datalist id="tkList">
             <option value="ПЭК">
             <option value="Деловые Линии">
-            <option value="КИТ">
+            <option value="КИТ (GTD)">
             <option value="Энергия">
             <option value="Луч">
             <option value="Другое">
@@ -197,10 +197,10 @@
   </form>
 
   <script>
-    // === НАСТРОЙКИ ===
-const BOT_TOKEN = "8456414881:AAFQWFUnDmtI5R-2gRYnWFGdrptZwIcqQdk";
-const TARGET_CHAT_ID = "-1003268855842";
-const APP_LINK = "https://t.me/fm_sales_reg_bot/sales";
+    // === СТРОГИЕ НАСТРОЙКИ ДЛЯ ЧАТА "Моторы Продажи FM" ===
+    const BOT_TOKEN = "8456414881:AAFQWFUnDmtI5R-2gRYnWFGdrptZwIcqQdk";
+    const TARGET_CHAT_ID = "-1003268855842";
+    const APP_LINK = "https://t.me/fm_sales_reg_bot/sales";
 
     const tg = window.Telegram.WebApp;
     tg.expand();
@@ -251,28 +251,6 @@ const APP_LINK = "https://t.me/fm_sales_reg_bot/sales";
         singleLabel.innerText = 'Город доставки (в скобках) *';
         singleInput.placeholder = 'Например: Пермь, Тюмень, Челябинск';
       }
-    }
-
-    async function sendMsgToChat(chatId, text) {
-      return await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: text,
-          parse_mode: 'HTML',
-          reply_markup: {
-            inline_keyboard: [
-              [
-                {
-                  text: "📝 Записать новую продажу",
-                  url: APP_LINK
-                }
-              ]
-            ]
-          }
-        })
-      });
     }
 
     document.getElementById('saleForm').addEventListener('submit', async function(e) {
@@ -334,19 +312,32 @@ const APP_LINK = "https://t.me/fm_sales_reg_bot/sales";
         `▫️ <b>Покупатель:</b> ${document.getElementById('client').value.trim() || '—'}`;
 
       try {
-        let response = await sendMsgToChat(TARGET_CHAT_ID, textMessage);
-        let result = await response.json();
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TARGET_CHAT_ID,
+            text: textMessage,
+            parse_mode: 'HTML',
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: "📝 Записать новую продажу",
+                    url: APP_LINK
+                  }
+                ]
+              ]
+            }
+          })
+        });
 
-        if (!result.ok && !TARGET_CHAT_ID.startsWith("-100")) {
-          const supergroupId = "-100" + TARGET_CHAT_ID.replace("-", "");
-          response = await sendMsgToChat(supergroupId, textMessage);
-          result = await response.json();
-        }
+        const result = await response.json();
 
-        if (result.ok) {
+        if (response.ok && result.ok) {
           tg.close();
         } else {
-          alert('Ошибка от Telegram: ' + (result.description || JSON.stringify(result)));
+          alert('Ошибка отправки в чат -1003268855842: ' + (result.description || JSON.stringify(result)));
           btn.disabled = false;
           btn.innerText = 'Сохранить и отправить';
         }
