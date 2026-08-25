@@ -84,7 +84,6 @@
 
     <div class="field">
       <label>Стоимость (руб.) *</label>
-      <!-- text-поле, чтобы можно было вводить и 120000, и 120.000, и 120 000 -->
       <input type="text" id="price" placeholder="Например: 120000 или 120.000" required>
     </div>
 
@@ -135,7 +134,7 @@
       <label>Источник клиента *</label>
       <select id="source" required>
         <option value="Постоянный клиент">Постоянный клиент</option>
-        <option value="Сарафанное радио">Сарафанное радио</option>
+        <option value="Сарафан">Сарафан</option>
         <option value="Авито">Авито</option>
         <option value="Drom">Drom</option>
         <option value="Сайт">Сайт</option>
@@ -150,7 +149,7 @@
     <div class="field">
       <label>Способ забора / доставки *</label>
       <select id="delivType" onchange="onDeliveryChange()" required>
-        <option value="pickup">Самовывоз с нашего склада</option>
+        <option value="pickup">Самовывоз</option>
         <option value="service">Доставка до сервиса</option>
         <option value="tk">Доставка до транспортной компании</option>
         <option value="intercity">Доставка в другой город нашими силами</option>
@@ -174,10 +173,8 @@
     const tg = window.Telegram.WebApp;
     tg.expand();
 
-    // Функция парсинга и очистки введенной цены
     function parseNumericPrice(str) {
       if (!str) return 0;
-      // Убираем пробелы, точки тысяч, знаки валют и меняем запятую на точку
       let cleaned = str.toString().replace(/\s+/g, '').replace(/\./g, '').replace(',', '.');
       return parseFloat(cleaned) || 0;
     }
@@ -245,10 +242,9 @@
         payDesc = 'Рассрочка';
       }
 
-      // Логика формирования способа доставки
       let dType = document.getElementById('delivType').value;
       let details = document.getElementById('delivDetails').value.trim();
-      let deliveryFormatted = 'Самовывоз с нашего склада';
+      let deliveryFormatted = 'Самовывоз';
 
       if (dType === 'service') {
         deliveryFormatted = `Доставка до сервиса (${details})`;
