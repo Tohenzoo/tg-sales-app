@@ -197,7 +197,7 @@
   </form>
 
   <script>
-    // === СТРОГИЕ НАСТРОЙКИ ДЛЯ ЧАТА "Моторы Продажи FM" ===
+    // === НАСТРОЙКИ ===
     const BOT_TOKEN = "8456414881:AAFQWFUnDmtI5R-2gRYnWFGdrptZwIcqQdk";
     const TARGET_CHAT_ID = "-1003268855842";
     const APP_LINK = "https://t.me/fm_sales_reg_bot/sales";
@@ -297,11 +297,16 @@
         deliveryFormatted = `Доставка в другой город нашими силами (${details})`;
       }
 
+      // Определение имени и автозамена Factory Motors -> Антон
       const user = tg.initDataUnsafe?.user;
-      const authorName = user ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Менеджер';
+      let authorName = user ? `${user.first_name || ''} ${user.last_name || ''}`.trim() : 'Менеджер';
+      if (!authorName || authorName.toLowerCase().includes('factory motors')) {
+        authorName = 'Антон';
+      }
 
       const textMessage = 
-        `📋 <b>НОВАЯ ПРОДАЖА</b> (Менеджер: ${authorName})\n\n` +
+        `📋 <b>НОВАЯ ПРОДАЖА</b>\n` +
+        `(Менеджер: ${authorName})\n\n` +
         `▫️ <b>Модель ДВС:</b> ${document.getElementById('model').value.trim()}\n` +
         `▫️ <b>Номер ДВС:</b> ${document.getElementById('number').value.trim()}\n` +
         `▫️ <b>Цена:</b> ${formatNumber(basePrice)} ₽\n` +
@@ -337,7 +342,7 @@
         if (response.ok && result.ok) {
           tg.close();
         } else {
-          alert('Ошибка отправки в чат -1003268855842: ' + (result.description || JSON.stringify(result)));
+          alert('Ошибка отправки: ' + (result.description || JSON.stringify(result)));
           btn.disabled = false;
           btn.innerText = 'Сохранить и отправить';
         }
