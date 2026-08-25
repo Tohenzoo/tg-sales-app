@@ -174,9 +174,9 @@
   </form>
 
   <script>
-    // === НАСТРОЙКИ ДЛЯ ПРЯМОЙ ОТПРАВКИ ===
     const BOT_TOKEN = "8456414881:AAFQWFUnDmtI5R-2gRYnWFGdrptZwIcqQdk";
-    const TARGET_CHAT_ID = "-5137825342"; // ID вашего рабочего чата
+    const TARGET_CHAT_ID = "-5137825342";
+    const APP_URL = "https://tohenzoo.github.io/tg-sales-app/";
 
     const tg = window.Telegram.WebApp;
     tg.expand();
@@ -266,7 +266,6 @@
         deliveryFormatted = `Доставка в другой город нашими силами (${details})`;
       }
 
-      // Определяем имя автора из Telegram WebApp
       const user = tg.initDataUnsafe?.user;
       const authorName = user ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Менеджер';
 
@@ -288,14 +287,24 @@
           body: JSON.stringify({
             chat_id: TARGET_CHAT_ID,
             text: textMessage,
-            parse_mode: 'HTML'
+            parse_mode: 'HTML',
+            reply_markup: {
+              inline_keyboard: [
+                [
+                  {
+                    text: "📝 Записать новую продажу",
+                    web_app: { url: APP_URL }
+                  }
+                ]
+              ]
+            }
           })
         });
 
         if (response.ok) {
           tg.close();
         } else {
-          alert('Ошибка при отправке в Telegram. Проверьте ID чата или права бота в группе.');
+          alert('Ошибка при отправке в Telegram. Проверьте настройки бота.');
           btn.disabled = false;
           btn.innerText = 'Сохранить и отправить';
         }
