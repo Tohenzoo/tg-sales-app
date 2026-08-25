@@ -67,6 +67,10 @@
       cursor: pointer;
       margin-top: 10px;
     }
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -166,10 +170,14 @@
       <input type="text" id="client" placeholder="Иван +79991234567 (необязательно)">
     </div>
 
-    <button type="submit" class="btn-submit">Сохранить и отправить</button>
+    <button type="submit" id="submitBtn" class="btn-submit">Сохранить и отправить</button>
   </form>
 
   <script>
+    // === НАСТРОЙКИ ДЛЯ ПРЯМОЙ ОТПРАВКИ ===
+    const BOT_TOKEN = "8456414881:AAFQWFUnDmtI5R-2gRYnWFGdrptZwIcqQdk";
+    const TARGET_CHAT_ID = "-5137825342"; // ID вашего рабочего чата
+
     const tg = window.Telegram.WebApp;
     tg.expand();
 
@@ -217,8 +225,12 @@
       }
     }
 
-    document.getElementById('saleForm').addEventListener('submit', function(e) {
+    document.getElementById('saleForm').addEventListener('submit', async function(e) {
       e.preventDefault();
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerText = 'Отправка...';
 
       let rawPrice = document.getElementById('price').value.trim();
       let basePrice = parseNumericPrice(rawPrice);
@@ -254,19 +266,44 @@
         deliveryFormatted = `Доставка в другой город нашими силами (${details})`;
       }
 
-      const payload = {
-        model: document.getElementById('model').value.trim(),
-        number: document.getElementById('number').value.trim(),
-        price: formatNumber(basePrice) + ' ₽',
-        payment: payDesc,
-        source: document.getElementById('source').value,
-        contract: document.getElementById('contract').value.trim(),
-        delivery: deliveryFormatted,
-        client: document.getElementById('client').value.trim() || '—'
-      };
+      // Определяем имя автора из Telegram WebApp
+      const user = tg.initDataUnsafe?.user;
+      const authorName = user ? `${user.first_name} ${user.last_name || ''}`.trim() : 'Менеджер';
 
-      tg.sendData(JSON.stringify(payload));
-      tg.close();
+      const textMessage = 
+        `📋 <b>НОВАЯ ПРОДАЖА</b> (Менеджер: ${authorName})\n\n` +
+        `▫️ <b>Модель ДВС:</b> ${document.getElementById('model').value.trim()}\n` +
+        `▫️ <b>Номер ДВС:</b> ${document.getElementById('number').value.trim()}\n` +
+        `▫️ <b>Цена:</b> ${formatNumber(basePrice)} ₽\n` +
+        `▫️ <b>Оплата:</b> ${payDesc}\n` +
+        `▫️ <b>Источник:</b> ${document.getElementById('source').value}\n` +
+        `▫️ <b>Номер договора:</b> ${document.getElementById('contract').value.trim()}\n` +
+        `▫️ <b>Доставка/самовывоз:</b> ${deliveryFormatted}\n` +
+        `▫️ <b>Покупатель:</b> ${document.getElementById('client').value.trim() || '—'}`;
+
+      try {
+        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TARGET_CHAT_ID,
+            text: textMessage,
+            parse_mode: 'HTML'
+          })
+        });
+
+        if (response.ok) {
+          tg.close();
+        } else {
+          alert('Ошибка при отправке в Telegram. Проверьте ID чата или права бота в группе.');
+          btn.disabled = false;
+          btn.innerText = 'Сохранить и отправить';
+        }
+      } catch (err) {
+        alert('Ошибка соединения с сетью: ' + err.message);
+        btn.disabled = false;
+        btn.innerText = 'Сохранить и отправить';
+      }
     });
   </script>
 </body>
