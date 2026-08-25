@@ -174,9 +174,10 @@
   </form>
 
   <script>
+    // === НАСТРОЙКИ ===
     const BOT_TOKEN = "8456414881:AAFQWFUnDmtI5R-2gRYnWFGdrptZwIcqQdk";
     const TARGET_CHAT_ID = "-5137825342";
-    const APP_URL = "https://tohenzoo.github.io/tg-sales-app/";
+    const APP_LINK = "https://t.me/fm_sales_reg_bot/sales"; // Ваша ссылка на приложение в Telegram
 
     const tg = window.Telegram.WebApp;
     tg.expand();
@@ -293,7 +294,7 @@
                 [
                   {
                     text: "📝 Записать новую продажу",
-                    web_app: { url: APP_URL }
+                    url: APP_LINK
                   }
                 ]
               ]
@@ -301,10 +302,12 @@
           })
         });
 
-        if (response.ok) {
+        const result = await response.json();
+
+        if (response.ok && result.ok) {
           tg.close();
         } else {
-          alert('Ошибка при отправке в Telegram. Проверьте настройки бота.');
+          alert('Ошибка Telegram API: ' + (result.description || 'неизвестная ошибка'));
           btn.disabled = false;
           btn.innerText = 'Сохранить и отправить';
         }
